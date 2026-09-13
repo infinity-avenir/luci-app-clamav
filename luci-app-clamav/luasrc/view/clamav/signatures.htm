@@ -1,0 +1,144 @@
+<%+header%>
+
+<style>
+    .sig-page { max-width: 1000px; }
+    .sig-section {
+        background: #fff; border: 1px solid #ddd; border-radius: 6px;
+        padding: 16px 20px; margin-bottom: 20px;
+    }
+    .sig-section h3 { margin: 0 0 12px 0; font-size: 15px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+    .sig-info-table { width: 100%; border-collapse: collapse; }
+    .sig-info-table td { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+    .sig-info-table td:first-child { color: #666; width: 200px; font-weight: 500; }
+    .sig-update-btn {
+        padding: 10px 24px; border: 1px solid #1976d2; background: #1976d2;
+        color: #fff; border-radius: 4px; cursor: pointer; font-size: 14px;
+        font-weight: 500;
+    }
+    .sig-update-btn:hover { background: #1565c0; }
+    .sig-update-btn:disabled { background: #bbb; border-color: #bbb; cursor: not-allowed; }
+    .sig-output {
+        background: #fafafa; border: 1px solid #eee; border-radius: 4px;
+        padding: 12px; margin-top: 12px; font-family: monospace; font-size: 12px;
+        white-space: pre-wrap; max-height: 400px; overflow-y: auto; display: none;
+    }
+    .sig-db-list { margin-top: 12px; }
+    .sig-db-item {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 8px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px;
+    }
+    .sig-db-item:last-child { border-bottom: none; }
+    .db-name { font-weight: 500; color: #333; }
+    .db-meta { color: #888; font-size: 12px; }
+</style>
+
+<div class="sig-page">
+    <h2><%:ClamAV Signature Management%></h2>
+
+    <div class="sig-section">
+        <h3><%:Database Information%></h3>
+        <table class="sig-info-table">
+            <tr><td><%:Total Signatures%></td><td id="sig-total">--</td></tr>
+            <tr><td><%:Database Directory%></td><td id="sig-dir">--</td></tr>
+            <tr><td><%:Last Update%></td><td id="sig-last-update">--</td></tr>
+            <tr><td><%:Freshclam Status%></td><td id="sig-freshclam">--</td></tr>
+        </table>
+    </div>
+
+    <div class="sig-section">
+        <h3><%:Database Files%></h3>
+        <div class="sig-db-list" id="db-file-list">
+            <div style="padding:12px;color:#999;text-align:center;"><%:Loading...%></div>
+        </div>
+    </div>
+
+    <div class="sig-section">
+        <h3><%:Update Signatures%></h3>
+        <p style="font-size:13px;color:#666;margin:0 0 12px 0;">
+            <%:Run freshclam to download the latest virus definitions from ClamAV mirrors.%>
+        </p>
+        <button class="sig-update-btn" id="update-btn" onclick="updateSignatures()">
+            <%:Update Now%>
+        </button>
+        <div class="sig-output" id="update-output"></div>
+    </div>
+</div>
+
+<script>
+    function loadSigInfo() {
+        (new XHR()).get('<%=luci.dispatcher.build_url("admin/services/clamav/api/status")%>', null, function(x) {
+            try {
+                var s = JSON.parse(x.responseText);
+                document.getElementById('sig-total').textContent = s.signatures || 'N/A';
+                document.getElementById('sig-dir').textContent = s.db_dir || '/usr/share/clamav';
+
+                if (s.last_db_update && s.last_db_update !== '') {
+                    var d = new Date(parseInt(s.last_db_update) * 1000);
+                    document.getElementById('sig-last-update').textContent = d.toLocaleString();
+                } else {
+                    document.getElementById('sig-last-update').textContent = 'Unknown';
+                }
+
+                var fcEl = document.getElementById('sig-freshclam');
+                if (s.freshclam_running) {
+                    fcEl.innerHTML = '<span style="color:#2e7d32;font-weight:600;">● Running</span>';
+                } else {
+                    fcEl.innerHTML = '<span style="color:#c62828;font-weight:600;">● Stopped</span>';
+                }
+
+                // Parse database files
+                var dbList = document.getElementById('db-file-list');
+                if (s.db_files && s.db_files.trim() !== '') {
+                    var lines = s.db_files.trim().split('\n');
+                    var html = '';
+                    for (var i = 0; i < lines.length; i++) {
+                        var parts = lines[i].trim().split(/\s+/);
+                        if (parts.length >= 9) {
+                            var fname = parts.slice(8).join(' ');
+                            var fsize = parts[4];
+                            var fdate = parts[5] + ' ' + parts[6] + ' ' + parts[7];
+                            html += '<div class="sig-db-item">'
+                                + '<span class="db-name">' + fname.split('/').pop() + '</span>'
+                                + '<span class="db-meta">' + fsize + ' bytes &mdash; ' + fdate + '</span>'
+                                + '</div>';
+                        }
+                    }
+                    dbList.innerHTML = html || '<div style="padding:12px;color:#999;">No database files found</div>';
+                } else {
+                    dbList.innerHTML = '<div style="padding:12px;color:#999;">No database files found</div>';
+                }
+
+            } catch(e) { console.error('Sig info error:', e); }
+        });
+    }
+
+    function updateSignatures() {
+        var btn = document.getElementById('update-btn');
+        var output = document.getElementById('update-output');
+        btn.disabled = true;
+        btn.textContent = 'Updating...';
+        output.style.display = 'block';
+        output.textContent = 'Running freshclam...\n';
+
+        (new XHR()).get('<%=luci.dispatcher.build_url("admin/services/clamav/api/update_sigs")%>', null, function(x) {
+            try {
+                var r = JSON.parse(x.responseText);
+                output.textContent = r.output || 'No output';
+                if (r.success) {
+                    output.style.borderColor = '#4caf50';
+                } else {
+                    output.style.borderColor = '#e53935';
+                }
+            } catch(e) {
+                output.textContent = 'Error updating signatures';
+            }
+            btn.disabled = false;
+            btn.textContent = 'Update Now';
+            setTimeout(loadSigInfo, 2000);
+        });
+    }
+
+    loadSigInfo();
+</script>
+
+<%+footer%>

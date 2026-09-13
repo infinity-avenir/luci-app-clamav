@@ -1,0 +1,18 @@
+#!/bin/sh
+# UCI defaults for luci-app-clamav
+
+# Ensure the clamav UCI config exists
+[ -f /etc/config/clamav ] || touch /etc/config/clamav
+
+# Create quarantine directory
+mkdir -p /tmp/clamav-quarantine
+chmod 750 /tmp/clamav-quarantine
+
+# Create runtime directory
+mkdir -p /var/run/clamav
+chmod 755 /var/run/clamav
+
+# Clear LuCI index cache so our new pages appear
+rm -f /tmp/luci-indexcache /tmp/luci-modulecache/*
+
+exit 0

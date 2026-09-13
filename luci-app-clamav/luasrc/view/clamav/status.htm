@@ -1,0 +1,221 @@
+<%+header%>
+
+<style>
+    .clamav-dashboard { max-width: 1200px; }
+    .clamav-cards { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+    .clamav-card {
+        background: #fff; border: 1px solid #ddd; border-radius: 6px;
+        padding: 16px 20px; flex: 1 1 220px; min-width: 200px;
+    }
+    .clamav-card h4 { margin: 0 0 8px 0; font-size: 13px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+    .clamav-card .value { font-size: 28px; font-weight: 700; color: #333; }
+    .clamav-card .sub { font-size: 12px; color: #888; margin-top: 4px; }
+    .status-running { color: #2e7d32; }
+    .status-stopped { color: #c62828; }
+    .status-badge {
+        display: inline-block; padding: 3px 10px; border-radius: 12px;
+        font-size: 12px; font-weight: 600; color: #fff;
+    }
+    .badge-green { background: #4caf50; }
+    .badge-red { background: #e53935; }
+    .badge-orange { background: #ff9800; }
+    .badge-grey { background: #9e9e9e; }
+    .clamav-actions { margin-bottom: 20px; }
+    .clamav-actions button {
+        margin-right: 8px; padding: 8px 18px; border: 1px solid #ccc;
+        border-radius: 4px; background: #fff; cursor: pointer; font-size: 13px;
+    }
+    .clamav-actions button:hover { background: #f5f5f5; }
+    .clamav-actions button.btn-start { border-color: #4caf50; color: #2e7d32; }
+    .clamav-actions button.btn-stop { border-color: #e53935; color: #c62828; }
+    .clamav-actions button.btn-restart { border-color: #1976d2; color: #1565c0; }
+    .clamav-section {
+        background: #fff; border: 1px solid #ddd; border-radius: 6px;
+        padding: 16px 20px; margin-bottom: 20px;
+    }
+    .clamav-section h3 { margin: 0 0 12px 0; font-size: 15px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+    .info-table { width: 100%; border-collapse: collapse; }
+    .info-table td { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+    .info-table td:first-child { color: #666; width: 180px; font-weight: 500; }
+    .info-table td:last-child { color: #333; }
+    .scan-box { margin-top: 12px; }
+    .scan-box input[type="text"] { width: 300px; padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+    .scan-box button { padding: 6px 16px; border: 1px solid #1976d2; background: #fff; color: #1565c0; border-radius: 4px; cursor: pointer; margin-left: 6px; font-size: 13px; }
+    .scan-output { background: #fafafa; border: 1px solid #eee; border-radius: 4px; padding: 10px; margin-top: 10px; font-family: monospace; font-size: 12px; white-space: pre-wrap; max-height: 300px; overflow-y: auto; display: none; }
+    .progress-bar-bg { background: #e0e0e0; border-radius: 4px; height: 8px; margin-top: 6px; }
+    .progress-bar-fill { background: #4caf50; height: 8px; border-radius: 4px; transition: width 0.3s; }
+    .auto-refresh-note { font-size: 11px; color: #999; margin-top: 6px; }
+</style>
+
+<div class="clamav-dashboard">
+    <h2><%:ClamAV Status Dashboard%></h2>
+
+    <div class="clamav-cards">
+        <div class="clamav-card">
+            <h4><%:Service Status%></h4>
+            <div class="value" id="svc-status">--</div>
+            <div class="sub" id="svc-pid">PID: --</div>
+        </div>
+        <div class="clamav-card">
+            <h4><%:Memory Usage%></h4>
+            <div class="value" id="mem-usage">--</div>
+            <div class="sub" id="mem-system">System: --</div>
+            <div class="progress-bar-bg"><div class="progress-bar-fill" id="mem-bar" style="width:0%"></div></div>
+        </div>
+        <div class="clamav-card">
+            <h4><%:Virus Signatures%></h4>
+            <div class="value" id="sig-count">--</div>
+            <div class="sub" id="sig-update">Last update: --</div>
+        </div>
+        <div class="clamav-card">
+            <h4><%:Alerts%></h4>
+            <div class="value" id="alert-count">0</div>
+            <div class="sub"><%:Threats detected%></div>
+        </div>
+    </div>
+
+    <div class="clamav-actions">
+        <button class="btn-start" onclick="serviceAction('start')"><%:Start%></button>
+        <button class="btn-stop" onclick="serviceAction('stop')"><%:Stop%></button>
+        <button class="btn-restart" onclick="serviceAction('restart')"><%:Restart%></button>
+        <button onclick="refreshStatus()"><%:Refresh%></button>
+    </div>
+
+    <div class="clamav-section">
+        <h3><%:Service Details%></h3>
+        <table class="info-table">
+            <tr><td><%:ClamAV Version%></td><td id="info-version">--</td></tr>
+            <tr><td><%:Process ID%></td><td id="info-pid">--</td></tr>
+            <tr><td><%:Uptime%></td><td id="info-uptime">--</td></tr>
+            <tr><td><%:Database Directory%></td><td id="info-dbdir">--</td></tr>
+            <tr>
+                <td><%:Freshclam%></td>
+                <td id="info-freshclam">--</td>
+            </tr>
+            <tr>
+                <td><%:Milter%></td>
+                <td id="info-milter">--</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="clamav-section">
+        <h3><%:Quick Scan%></h3>
+        <div class="scan-box">
+            <input type="text" id="scan-path" placeholder="/tmp" value="/tmp" />
+            <button onclick="runScan()"><%:Scan Now%></button>
+        </div>
+        <div class="scan-output" id="scan-output"></div>
+    </div>
+
+    <div class="auto-refresh-note"><%:Auto-refreshes every 5 seconds%></div>
+</div>
+
+<script>
+    function formatBytes(kb) {
+        if (kb > 1048576) return (kb / 1048576).toFixed(1) + ' GB';
+        if (kb > 1024) return (kb / 1024).toFixed(1) + ' MB';
+        return kb + ' kB';
+    }
+
+    function formatUptime(seconds) {
+        if (!seconds || seconds <= 0) return 'N/A';
+        var d = Math.floor(seconds / 86400);
+        var h = Math.floor((seconds % 86400) / 3600);
+        var m = Math.floor((seconds % 3600) / 60);
+        var parts = [];
+        if (d > 0) parts.push(d + 'd');
+        if (h > 0) parts.push(h + 'h');
+        parts.push(m + 'm');
+        return parts.join(' ');
+    }
+
+    function refreshStatus() {
+        (new XHR()).get('<%=luci.dispatcher.build_url("admin/services/clamav/api/status")%>', null, function(x, data) {
+            try {
+                var s = JSON.parse(x.responseText);
+
+                // Service status
+                var statusEl = document.getElementById('svc-status');
+                if (s.running) {
+                    statusEl.innerHTML = '<span class="status-running">● Running</span>';
+                } else {
+                    statusEl.innerHTML = '<span class="status-stopped">● Stopped</span>';
+                }
+                document.getElementById('svc-pid').textContent = 'PID: ' + s.pid;
+
+                // Memory
+                document.getElementById('mem-usage').textContent = formatBytes(s.memory);
+                var memUsed = s.mem_total - s.mem_available;
+                var memPct = s.mem_total > 0 ? Math.round((memUsed / s.mem_total) * 100) : 0;
+                document.getElementById('mem-system').textContent = formatBytes(memUsed) + ' / ' + formatBytes(s.mem_total) + ' (' + memPct + '%)';
+                document.getElementById('mem-bar').style.width = memPct + '%';
+                if (memPct > 80) document.getElementById('mem-bar').style.background = '#e53935';
+                else if (memPct > 60) document.getElementById('mem-bar').style.background = '#ff9800';
+                else document.getElementById('mem-bar').style.background = '#4caf50';
+
+                // Signatures
+                document.getElementById('sig-count').textContent = s.signatures || 'N/A';
+                if (s.last_db_update && s.last_db_update !== '') {
+                    var d = new Date(parseInt(s.last_db_update) * 1000);
+                    document.getElementById('sig-update').textContent = 'Last update: ' + d.toLocaleString();
+                }
+
+                // Alerts
+                document.getElementById('alert-count').textContent = s.alert_count || '0';
+
+                // Details
+                document.getElementById('info-version').textContent = s.version || 'Unknown';
+                document.getElementById('info-pid').textContent = s.pid || 'N/A';
+                document.getElementById('info-uptime').textContent = formatUptime(s.uptime);
+                document.getElementById('info-dbdir').textContent = s.db_dir || '/usr/share/clamav';
+
+                var fcEl = document.getElementById('info-freshclam');
+                fcEl.innerHTML = s.freshclam_running
+                    ? '<span class="status-badge badge-green">Running</span>'
+                    : '<span class="status-badge badge-grey">Stopped</span>';
+
+                var mlEl = document.getElementById('info-milter');
+                mlEl.innerHTML = s.milter_running
+                    ? '<span class="status-badge badge-green">Running</span>'
+                    : '<span class="status-badge badge-grey">Stopped</span>';
+
+            } catch(e) { console.error('Status parse error:', e); }
+        });
+    }
+
+    function serviceAction(action) {
+        (new XHR()).get('<%=luci.dispatcher.build_url("admin/services/clamav/api/service")%>?action=' + action, null, function(x) {
+            setTimeout(refreshStatus, 1500);
+        });
+    }
+
+    function runScan() {
+        var path = document.getElementById('scan-path').value || '/tmp';
+        var output = document.getElementById('scan-output');
+        output.style.display = 'block';
+        output.textContent = 'Scanning ' + path + ' ...\n';
+
+        (new XHR()).get('<%=luci.dispatcher.build_url("admin/services/clamav/api/scan")%>?path=' + encodeURIComponent(path), null, function(x) {
+            try {
+                var r = JSON.parse(x.responseText);
+                output.textContent = r.output || 'No output';
+                if (r.infected > 0) {
+                    output.textContent += '\n\n⚠ INFECTED FILES FOUND: ' + r.infected;
+                    output.style.borderColor = '#e53935';
+                } else {
+                    output.textContent += '\n\n✓ No threats found.';
+                    output.style.borderColor = '#4caf50';
+                }
+            } catch(e) {
+                output.textContent = 'Error parsing scan results';
+            }
+        });
+    }
+
+    // Initial load and auto-refresh
+    refreshStatus();
+    setInterval(refreshStatus, 5000);
+</script>
+
+<%+footer%>

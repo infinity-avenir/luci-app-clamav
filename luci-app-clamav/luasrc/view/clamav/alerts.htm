@@ -1,0 +1,148 @@
+<%+header%>
+
+<style>
+    .alerts-page { max-width: 1200px; }
+    .alerts-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .alerts-stats { display: flex; gap: 12px; margin-bottom: 16px; }
+    .alert-stat {
+        background: #fff; border: 1px solid #ddd; border-radius: 6px;
+        padding: 12px 20px; flex: 1; text-align: center;
+    }
+    .alert-stat .count { font-size: 24px; font-weight: 700; }
+    .alert-stat .label { font-size: 12px; color: #666; margin-top: 4px; }
+    .count-danger { color: #c62828; }
+    .count-warning { color: #e65100; }
+    .count-info { color: #1565c0; }
+    .alerts-table-wrap {
+        background: #fff; border: 1px solid #ddd; border-radius: 6px;
+        overflow: hidden;
+    }
+    .alerts-table { width: 100%; border-collapse: collapse; }
+    .alerts-table th {
+        background: #f5f5f5; padding: 10px 12px; text-align: left;
+        font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px;
+        border-bottom: 1px solid #ddd;
+    }
+    .alerts-table td { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+    .alerts-table tr:hover { background: #fafafa; }
+    .severity-badge {
+        display: inline-block; padding: 2px 8px; border-radius: 10px;
+        font-size: 11px; font-weight: 600; color: #fff;
+    }
+    .sev-danger { background: #e53935; }
+    .sev-warning { background: #ff9800; }
+    .sev-info { background: #42a5f5; }
+    .auto-refresh-toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+    .auto-refresh-toggle input { cursor: pointer; }
+    .no-alerts { text-align: center; padding: 40px; color: #999; font-size: 14px; }
+    .refresh-btn {
+        padding: 6px 16px; border: 1px solid #ccc; border-radius: 4px;
+        background: #fff; cursor: pointer; font-size: 13px;
+    }
+    .refresh-btn:hover { background: #f5f5f5; }
+</style>
+
+<div class="alerts-page">
+    <div class="alerts-header">
+        <h2><%:ClamAV Alerts%></h2>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <label class="auto-refresh-toggle">
+                <input type="checkbox" id="auto-refresh" checked onchange="toggleAutoRefresh()" />
+                <%:Auto-refresh (5s)%>
+            </label>
+            <button class="refresh-btn" onclick="loadAlerts()"><%:Refresh%></button>
+        </div>
+    </div>
+
+    <div class="alerts-stats">
+        <div class="alert-stat">
+            <div class="count count-danger" id="stat-virus">0</div>
+            <div class="label"><%:Viruses Found%></div>
+        </div>
+        <div class="alert-stat">
+            <div class="count count-warning" id="stat-errors">0</div>
+            <div class="label"><%:Errors%></div>
+        </div>
+        <div class="alert-stat">
+            <div class="count count-info" id="stat-info">0</div>
+            <div class="label"><%:Info / Warnings%></div>
+        </div>
+    </div>
+
+    <div class="alerts-table-wrap">
+        <table class="alerts-table">
+            <thead>
+                <tr>
+                    <th style="width:60px"><%:Severity%></th>
+                    <th style="width:140px"><%:Time%></th>
+                    <th style="width:100px"><%:Type%></th>
+                    <th><%:Details%></th>
+                </tr>
+            </thead>
+            <tbody id="alerts-body">
+                <tr><td colspan="4" class="no-alerts"><%:Loading alerts...%></td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    var autoRefreshTimer = null;
+
+    function loadAlerts() {
+        (new XHR()).get('<%=luci.dispatcher.build_url("admin/services/clamav/api/alerts")%>', null, function(x) {
+            try {
+                var data = JSON.parse(x.responseText);
+                var alerts = data.alerts || [];
+                var tbody = document.getElementById('alerts-body');
+
+                var virusCount = 0, errorCount = 0, infoCount = 0;
+
+                if (alerts.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="no-alerts">No alerts found. System is clean.</td></tr>';
+                } else {
+                    var html = '';
+                    for (var i = 0; i < alerts.length; i++) {
+                        var a = alerts[i];
+                        var sevClass = 'sev-info';
+                        if (a.severity === 'danger') { sevClass = 'sev-danger'; virusCount++; }
+                        else if (a.severity === 'warning') { sevClass = 'sev-warning'; errorCount++; }
+                        else { infoCount++; }
+
+                        var details = a.message || '';
+                        if (a.file) details = '<strong>File:</strong> ' + a.file;
+                        if (a.virus) details += ' &mdash; <strong>Threat:</strong> ' + a.virus;
+
+                        html += '<tr>'
+                            + '<td><span class="severity-badge ' + sevClass + '">' + (a.severity || 'info') + '</span></td>'
+                            + '<td>' + (a.timestamp || '--') + '</td>'
+                            + '<td>' + (a.type || '--') + '</td>'
+                            + '<td>' + details + '</td>'
+                            + '</tr>';
+                    }
+                    tbody.innerHTML = html;
+                }
+
+                document.getElementById('stat-virus').textContent = virusCount;
+                document.getElementById('stat-errors').textContent = errorCount;
+                document.getElementById('stat-info').textContent = infoCount;
+
+            } catch(e) {
+                console.error('Alert parse error:', e);
+            }
+        });
+    }
+
+    function toggleAutoRefresh() {
+        if (document.getElementById('auto-refresh').checked) {
+            autoRefreshTimer = setInterval(loadAlerts, 5000);
+        } else {
+            clearInterval(autoRefreshTimer);
+        }
+    }
+
+    loadAlerts();
+    autoRefreshTimer = setInterval(loadAlerts, 5000);
+</script>
+
+<%+footer%>

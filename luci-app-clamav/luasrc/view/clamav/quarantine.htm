@@ -1,0 +1,95 @@
+<%+header%>
+
+<style>
+    .quarantine-page { max-width: 1000px; }
+    .quarantine-section {
+        background: #fff; border: 1px solid #ddd; border-radius: 6px;
+        padding: 16px 20px; margin-bottom: 20px;
+    }
+    .quarantine-section h3 { margin: 0 0 12px 0; font-size: 15px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+    .q-info { font-size: 13px; color: #666; margin-bottom: 12px; }
+    .q-table { width: 100%; border-collapse: collapse; }
+    .q-table th {
+        background: #f5f5f5; padding: 8px 12px; text-align: left;
+        font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px;
+        border-bottom: 1px solid #ddd;
+    }
+    .q-table td { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+    .q-table tr:hover { background: #fafafa; }
+    .q-empty { text-align: center; padding: 40px; color: #999; font-size: 14px; }
+    .q-count-badge {
+        display: inline-block; background: #e53935; color: #fff;
+        padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 600;
+        margin-left: 8px;
+    }
+    .q-refresh-btn {
+        padding: 6px 16px; border: 1px solid #ccc; border-radius: 4px;
+        background: #fff; cursor: pointer; font-size: 13px; float: right;
+    }
+    .q-refresh-btn:hover { background: #f5f5f5; }
+</style>
+
+<div class="quarantine-page">
+    <h2><%:Quarantined Files%></h2>
+
+    <div class="quarantine-section">
+        <h3>
+            <%:Quarantine Directory%>
+            <button class="q-refresh-btn" onclick="loadQuarantine()"><%:Refresh%></button>
+        </h3>
+        <div class="q-info">
+            <%:Directory%>: <strong id="q-dir">--</strong>
+            &nbsp; | &nbsp;
+            <%:Files%>: <span id="q-count" class="q-count-badge">0</span>
+        </div>
+
+        <table class="q-table">
+            <thead>
+                <tr>
+                    <th><%:File Name%></th>
+                    <th style="width:100px"><%:Size%></th>
+                    <th style="width:160px"><%:Date%></th>
+                    <th style="width:80px"><%:Owner%></th>
+                </tr>
+            </thead>
+            <tbody id="q-body">
+                <tr><td colspan="4" class="q-empty"><%:Loading...%></td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function loadQuarantine() {
+        (new XHR()).get('<%=luci.dispatcher.build_url("admin/services/clamav/api/quarantine")%>', null, function(x) {
+            try {
+                var data = JSON.parse(x.responseText);
+                document.getElementById('q-dir').textContent = data.directory || '--';
+                document.getElementById('q-count').textContent = data.count || '0';
+
+                var tbody = document.getElementById('q-body');
+                var files = data.files || [];
+
+                if (files.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="q-empty">No quarantined files. All clear.</td></tr>';
+                } else {
+                    var html = '';
+                    for (var i = 0; i < files.length; i++) {
+                        var f = files[i];
+                        html += '<tr>'
+                            + '<td>' + (f.name || '--') + '</td>'
+                            + '<td>' + (f.size || '--') + '</td>'
+                            + '<td>' + (f.date || '--') + '</td>'
+                            + '<td>' + (f.owner || '--') + '</td>'
+                            + '</tr>';
+                    }
+                    tbody.innerHTML = html;
+                }
+            } catch(e) { console.error('Quarantine parse error:', e); }
+        });
+    }
+
+    loadQuarantine();
+</script>
+
+<%+footer%>

@@ -51,29 +51,38 @@ Three dedicated settings pages, each backed by UCI (`/etc/config/clamav`):
 ## Project Structure
 
 ```
-luci-app-clamav/
-├── Makefile                              # OpenWrt package Makefile
-├── luasrc/
-│   ├── controller/
-│   │   └── clamav.lua                    # LuCI controller — routes & API
-│   ├── model/
-│   │   └── cbi/
-│   │       └── clamav/
-│   │           ├── clamd.lua             # CBI model: ClamAV daemon settings
-│   │           ├── milter.lua            # CBI model: Milter settings
-│   │           └── freshclam.lua         # CBI model: Freshclam settings
-│   └── view/
-│       └── clamav/
-│           ├── status.htm                # Status dashboard template
-│           ├── alerts.htm                # Alert management template
-│           ├── signatures.htm            # Signature management template
-│           └── quarantine.htm            # Quarantine viewer template
-└── root/
-    └── etc/
-        ├── config/
-        │   └── clamav                    # UCI default config
-        └── uci-defaults/
-            └── 40_luci-clamav            # Post-install setup script
+luci-app-clamav-source/
+│
+├── README.md                            — Build/install instructions & troubleshooting
+├── build-apk.sh                         — APK v2 build script (bash + python3)
+├── luci-app-clamav-1.0.0-r15.apk        — Pre-built package, ready to install
+│
+├── acl.d/
+│   └── luci-app-clamav.json             — rpcd ACL permissions (file access, exec rights)
+│
+├── menu.d/
+│   └── luci-app-clamav.json             — LuCI navigation menu (7 tabs under Services → ClamAV)
+│
+├── uci-defaults/
+│   └── 40_luci-clamav                   — First-install script: creates UCI config sections
+│                                                      (clamav, freshclam, milter) + directories
+│
+└── view/clamav/                        — JavaScript UI views (LuCI JS framework)
+    ├── status.js                       — Dashboard: daemon/freshclam status, signatures,
+    │                                                  alerts, memory bar, service controls
+    ├── clamd.js                        — ClamAV daemon settings form (logging, scanning,
+    │                                                  detection, network, system, directories, socket)
+    ├── freshclam.js                    — Freshclam settings form (update frequency dropdown,
+    │                                                  mirrors, database options, timeouts)
+    ├── milter.js                       — Mail filter settings form (sockets, actions,
+    │                                                  limits, logging)
+    ├── alerts.js                       — Threat log viewer (summary cards, alert table,
+    │                                                  raw log tail)
+    ├── signatures.js                   — Signature database manager (per-db download/update,
+    │                                                  background exec + polling, auto-update display)
+    └── quarantine.js                   — Quarantine file manager (list, delete individual
+                                                       or all, threat lookup from log)
+
 ```
 
 ---

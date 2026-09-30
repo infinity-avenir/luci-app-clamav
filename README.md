@@ -156,7 +156,7 @@ Standard LuCI package Makefile. It declares:
 - ClamAV installed on the router (`opkg install clamav` or equivalent)
 - SSH access to the router
 
-### Method 1: Install from APK/IPK file (recommended)
+### Method 1: Install from APK file (recommended)
 
 1. **Transfer the package to your router:**
    ```bash

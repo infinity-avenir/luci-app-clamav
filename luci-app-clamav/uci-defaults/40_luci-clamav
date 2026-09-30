@@ -1,0 +1,73 @@
+#!/bin/sh
+
+# Ensure the UCI config file exists
+[ -f /etc/config/clamav ] || touch /etc/config/clamav
+
+# Create main clamav section if it doesn't exist (matches existing OpenWrt convention)
+uci -q get clamav.clamav >/dev/null || {
+	uci set clamav.clamav=clamav
+	uci set clamav.clamav.LogTime='yes'
+	uci set clamav.clamav.LogVerbose='no'
+	uci set clamav.clamav.LogSyslog='false'
+	uci set clamav.clamav.LogFacility='LOG_LOCAL6'
+	uci set clamav.clamav.DatabaseDirectory='/usr/share/clamav'
+	uci set clamav.clamav.LocalSocket='/var/run/clamav/clamd.sock'
+	uci set clamav.clamav.FixStaleSocket='yes'
+	uci set clamav.clamav.TCPSocket='3310'
+	uci set clamav.clamav.TCPAddr='127.0.0.1'
+	uci set clamav.clamav.User='nobody'
+	uci set clamav.clamav.ScanPE='yes'
+	uci set clamav.clamav.ScanELF='yes'
+	uci set clamav.clamav.ScanOLE2='yes'
+	uci set clamav.clamav.ScanPDF='yes'
+	uci set clamav.clamav.ScanSWF='yes'
+	uci set clamav.clamav.ScanMail='yes'
+	uci set clamav.clamav.ScanHTML='yes'
+	uci set clamav.clamav.ScanArchive='yes'
+	uci set clamav.clamav.MaxDirectoryRecursion='15'
+	uci set clamav.clamav.MaxThreads='2'
+	uci set clamav.clamav.ExitOnOOM='yes'
+	uci set clamav.clamav.TemporaryDirectory='/tmp'
+	uci commit clamav
+}
+
+# Create freshclam section if it doesn't exist
+uci -q get clamav.freshclam >/dev/null || {
+	uci set clamav.freshclam=freshclam
+	uci set clamav.freshclam.UpdateLogFile='/var/log/clamav/freshclam.log'
+	uci set clamav.freshclam.LogTime='true'
+	uci set clamav.freshclam.DatabaseDirectory='/usr/share/clamav'
+	uci set clamav.freshclam.DatabaseMirror='database.clamav.net'
+	uci set clamav.freshclam.DNSDatabaseInfo='current.cvd.clamav.net'
+	uci set clamav.freshclam.Checks='1'
+	uci set clamav.freshclam.NotifyClamd='/etc/clamav/clamd.conf'
+	uci set clamav.freshclam.ScriptedUpdates='true'
+	uci set clamav.freshclam.TestDatabases='false'
+	uci set clamav.freshclam.Bytecode='true'
+	uci set clamav.freshclam.ConnectTimeout='60'
+	uci set clamav.freshclam.ReceiveTimeout='60'
+	uci commit clamav
+}
+
+# Create milter section if it doesn't exist
+uci -q get clamav.milter >/dev/null || {
+	uci set clamav.milter=milter
+	uci set clamav.milter.MilterSocket='/var/run/clamav/clamav-milter.sock'
+	uci set clamav.milter.ClamdSocket='unix:/var/run/clamav/clamd.sock'
+	uci set clamav.milter.OnClean='Accept'
+	uci set clamav.milter.OnInfected='Quarantine'
+	uci set clamav.milter.OnFail='Defer'
+	uci set clamav.milter.AddHeader='1'
+	uci set clamav.milter.MaxFileSize='25M'
+	uci commit clamav
+}
+
+# Create required directories
+mkdir -p /var/log/clamav /var/run/clamav /tmp/clamav-quarantine
+chown nobody:nogroup /var/log/clamav /var/run/clamav /tmp/clamav-quarantine 2>/dev/null
+
+# Clear LuCI cache
+rm -f /tmp/luci-indexcache
+rm -rf /tmp/luci-modulecache/
+
+exit 0

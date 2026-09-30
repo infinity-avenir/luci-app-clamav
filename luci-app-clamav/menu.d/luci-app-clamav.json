@@ -1,0 +1,68 @@
+{
+	"admin/services/clamav": {
+		"title": "ClamAV",
+		"order": 60,
+		"action": {
+			"type": "firstchild"
+		},
+		"depends": {
+			"acl": ["luci-app-clamav"]
+		}
+	},
+	"admin/services/clamav/status": {
+		"title": "Status",
+		"order": 1,
+		"action": {
+			"type": "view",
+			"path": "clamav/status"
+		}
+	},
+	"admin/services/clamav/clamd": {
+		"title": "ClamAV",
+		"order": 2,
+		"action": {
+			"type": "view",
+			"path": "clamav/clamd"
+		}
+	},
+	"admin/services/clamav/freshclam": {
+		"title": "Freshclam",
+		"order": 3,
+		"action": {
+			"type": "view",
+			"path": "clamav/freshclam"
+		}
+	},
+	"admin/services/clamav/milter": {
+		"title": "ClamAV Milter",
+		"order": 4,
+		"action": {
+			"type": "view",
+			"path": "clamav/milter"
+		}
+	},
+	"admin/services/clamav/alerts": {
+		"title": "Alerts",
+		"order": 5,
+		"action": {
+			"type": "view",
+			"path": "clamav/alerts"
+		}
+	},
+	"admin/services/clamav/signatures": {
+		"title": "Signatures",
+		"order": 6,
+		"action": {
+			"type": "view",
+			"path": "clamav/signatures"
+		}
+	},
+	"admin/services/clamav/quarantine": {
+		"title": "Quarantine",
+		"order": 7,
+		"action": {
+			"type": "view",
+			"path": "clamav/quarantine"
+		}
+	}
+}

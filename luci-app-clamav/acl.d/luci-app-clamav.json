@@ -1,0 +1,56 @@
+{
+	"luci-app-clamav": {
+		"description": "Grant access to ClamAV configuration",
+		"read": {
+			"uci": ["clamav"],
+			"ubus": {
+				"service": ["list"],
+				"luci": ["getInitList", "getInitAction"]
+			},
+			"file": {
+				"/etc/config/clamav": ["read"],
+				"/etc/clamav/*": ["read"],
+				"/var/log/clamav/*": ["read"],
+				"/tmp/clamav-quarantine/*": ["read"],
+				"/var/lib/clamav/*": ["read"],
+				"/usr/share/clamav/*": ["read"],
+				"/mnt/*/clamav/*": ["read"],
+				"/mnt/*/*/clamav/*": ["read"],
+				"/proc/meminfo": ["read"],
+				"/proc/swaps": ["read"],
+				"/usr/bin/clamdscan": ["exec"],
+				"/usr/bin/freshclam": ["exec"],
+				"/usr/bin/clamscan": ["exec"],
+				"/usr/bin/clamd": ["exec"],
+				"/usr/sbin/clamdscan": ["exec"],
+				"/usr/sbin/freshclam": ["exec"],
+				"/usr/sbin/clamscan": ["exec"],
+				"/usr/sbin/clamd": ["exec"],
+				"/usr/local/bin/clamdscan": ["exec"],
+				"/usr/local/bin/freshclam": ["exec"],
+				"/usr/local/bin/clamscan": ["exec"],
+				"/usr/local/bin/clamd": ["exec"],
+				"/usr/bin/find": ["exec"],
+				"/bin/ps": ["exec"],
+				"/bin/cat": ["exec"],
+				"/bin/ls": ["exec"],
+				"/bin/grep": ["exec"],
+				"/bin/rm": ["exec"],
+				"/bin/sh": ["exec"],
+				"/bin/mkdir": ["exec"],
+				"/sbin/logread": ["exec"]
+			}
+		},
+		"write": {
+			"uci": ["clamav"],
+			"ubus": {
+				"luci": ["setInitAction"]
+			},
+			"file": {
+				"/etc/config/clamav": ["write"],
+				"/tmp/clamav-quarantine/*": ["write"],
+				"/tmp/freshclam-dl-*": ["write"]
+			}
+		}
+	}
+}

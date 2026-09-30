@@ -55,7 +55,6 @@ luci-app-clamav-source/
 │
 ├── README.md                            — Build/install instructions & troubleshooting
 ├── build-apk.sh                         — APK v2 build script (bash + python3)
-├── luci-app-clamav-1.0.0-r15.apk        — Pre-built package, ready to install
 │
 ├── acl.d/
 │   └── luci-app-clamav.json             — rpcd ACL permissions (file access, exec rights)

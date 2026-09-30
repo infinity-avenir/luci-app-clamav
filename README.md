@@ -273,3 +273,12 @@ rm -rf /tmp/luci-modulecache/
 | "Permission denied" errors | Check that clamd runs as the user specified in settings; ensure socket directories exist and are writable |
 | Signature update fails | Check network connectivity; verify `freshclam.conf` or UCI `DatabaseMirror` points to a reachable server |
 | High memory usage | ClamAV is memory-intensive; on routers with <256MB RAM, consider reducing `MaxThreads` to 1 and lowering `MaxFileSize` |
+
+---
+
+## Example Screenshot
+<img width="1152" height="1130" alt="image" src="https://github.com/user-attachments/assets/7dc25637-8ed6-4b78-bd03-178813f86f9f" />
+
+<img width="1147" height="1150" alt="image" src="https://github.com/user-attachments/assets/e4c941a5-0ccd-4523-949f-70e826b2c805" />
+
+

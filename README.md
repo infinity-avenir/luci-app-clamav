@@ -168,10 +168,8 @@ Standard LuCI package Makefile. It declares:
    ssh root@192.168.1.1
 
    # For OpenWrt 24.x+ (APK-based):
-   apk add --allow-untrusted /tmp/luci-app-clamav_1.0.0-1_all.apk
+   apk add --allow-untrusted /tmp/luci-app-clamav_1.0.0-1.apk
 
-   # For OpenWrt 21.x–23.x (opkg-based):
-   opkg install /tmp/luci-app-clamav_1.0.0-1_all.ipk
    ```
 
 3. **Clear the LuCI cache (usually done automatically):**
